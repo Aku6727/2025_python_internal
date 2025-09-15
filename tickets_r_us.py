@@ -36,12 +36,12 @@ class Theatre:
         return self._movies.values()
 
     def get_movie_ids(self):
-        return set(self._movies.keys())
+        return list(self._movies.keys())
 
 
 class Movie:
-    """Movies can be booked in their assigned thatres with each one having a specific price and showtime. 
-    The amount of tickets purchased for a movie determines the remaining capacity in the theatre for that movie based on the assigned theatres original capacity"""
+    """Movies can be booked in their assigned theatres with each one having a specific price and showtime. 
+    The amount of tickets purchased for a movie determines the remaining capacity in the theatre for that movie based on the assigned theatre's original capacity"""
     def __init__(self, movie_id, theatre_id, movie_title, ticket_price, show_time, tickets_purchased):
         self._movie_id = movie_id
         self._theatre_id = theatre_id
@@ -137,8 +137,10 @@ def input_int(prompt, valid=None):
             value = int(input(prompt))
             if valid is None or value in valid:
                 return value
-        except:
-            pass
+            else:
+                print(f"Please enter one of: {list(valid)}")
+        except ValueError:
+            print("Please enter a valid number.")
 
 
 # load database and objects
@@ -156,12 +158,12 @@ while True:
 
     elif menu_choice == 2:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", set(theatres.keys()))
+        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
         list_movies(theatres[theatre_choice])
 
     elif menu_choice == 3:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", set(theatres.keys()))
+        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
         selected_theatre = theatres[theatre_choice]
         list_movies(selected_theatre)
         movie_choice = input_int("Movie ID: ", selected_theatre.get_movie_ids())
@@ -173,7 +175,7 @@ while True:
             continue
         quantity = input_int(
             f"Quantity (1-{available_tickets}): ",
-            set(range(1, available_tickets + 1)),
+            list(range(1, available_tickets + 1)),
         )
         try:
             selected_movie.purchase_tickets(quantity, theatre_capacity)
@@ -222,7 +224,7 @@ while True:
 
     elif menu_choice == 5:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", set(theatres.keys()))
+        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
         selected_theatre = theatres[theatre_choice]
         list_movies(selected_theatre)
         movie_choice = input_int("Movie ID: ", selected_theatre.get_movie_ids())
