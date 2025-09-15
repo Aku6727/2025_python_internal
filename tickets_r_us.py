@@ -96,27 +96,29 @@ def load_data():
     cursor = connection.cursor()
 
     cursor.execute("SELECT id, name, capacity FROM theatre")
-    all_theatres = {}
+    theatres = {}
     for theatre_id, theatre_name, theatre_capacity in cursor.fetchall():
-        all_theatres[theatre_id] = Theatre(theatre_id, theatre_name, theatre_capacity)
+        theatres[theatre_id] = Theatre(theatre_id, theatre_name, theatre_capacity)
 
     cursor.execute(
         "SELECT id, theatre_id, title, price, show_time, tickets_purchased FROM movie"
     )
     for movie_id, theatre_id, movie_title, ticket_price, show_time, tickets_purchased in cursor.fetchall():
         movie = Movie(movie_id, theatre_id, movie_title, ticket_price, show_time, tickets_purchased)
-        if theatre_id in all_theatres:
-            all_theatres[theatre_id].add_movie(movie)
+        if theatre_id in theatres:
+            theatres[theatre_id].add_movie(movie)
 
-    return connection, all_theatres
+    return connection, theatres
 
 
 def list_theatres(theatres):
+    """Display all theatres and their capacity"""
     for theatre in theatres.values():
         print(f"{theatre.get_id()}: {theatre.get_name()} (capacity {theatre.get_capacity()})")
 
 
 def list_movies(theatre: Theatre):
+    """Display all movies for a given theatre"""
     theatre_capacity = theatre.get_capacity()
     for movie in theatre.iter_movies():
         available = movie.tickets_available(theatre_capacity)
@@ -126,12 +128,14 @@ def list_movies(theatre: Theatre):
 
 
 def list_sales(connection):
+    """Display all sales made"""
     cursor = connection.execute("SELECT id, movie_id, qty, sale_time, total_price FROM sale")
     for sale_id, movie_id, quantity, sale_time, total_price in cursor.fetchall():
         print(f"{sale_id}: movie {movie_id} qty {quantity} time {sale_time} total ${total_price:.2f}")
 
 
 def input_int(prompt, valid=None):
+    """Ask for an integer input and keep retrying until valid"""
     while True:
         try:
             value = int(input(prompt))
@@ -158,18 +162,19 @@ while True:
 
     elif menu_choice == 2:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
-        list_movies(theatres[theatre_choice])
+        theatre_id = input_int("Theatre ID: ", list(theatres.keys()))
+        theatre = theatres[theatre_id]
+        list_movies(theatre)
 
     elif menu_choice == 3:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
-        selected_theatre = theatres[theatre_choice]
-        list_movies(selected_theatre)
-        movie_choice = input_int("Movie ID: ", selected_theatre.get_movie_ids())
-        selected_movie = selected_theatre.get_movie(movie_choice)
-        theatre_capacity = selected_theatre.get_capacity()
-        available_tickets = selected_movie.tickets_available(theatre_capacity)
+        theatre_id = input_int("Theatre ID: ", list(theatres.keys()))
+        theatre = theatres[theatre_id]
+        list_movies(theatre)
+        movie_id = input_int("Movie ID: ", theatre.get_movie_ids())
+        movie = theatre.get_movie(movie_id)
+        theatre_capacity = theatre.get_capacity()
+        available_tickets = movie.tickets_available(theatre_capacity)
         if available_tickets == 0:
             print("No tickets available.")
             continue
@@ -178,14 +183,14 @@ while True:
             list(range(1, available_tickets + 1)),
         )
         try:
-            selected_movie.purchase_tickets(quantity, theatre_capacity)
+            movie.purchase_tickets(quantity, theatre_capacity)
             connection.execute(
                 "INSERT INTO sale(movie_id, qty, sale_time, total_price) VALUES (?,?,?,?)",
-                (movie_choice, quantity, datetime.now().isoformat(), quantity * selected_movie.get_price()),
+                (movie_id, quantity, datetime.now().isoformat(), quantity * movie.get_price()),
             )
             connection.execute(
                 "UPDATE movie SET tickets_purchased = ? WHERE id = ?",
-                (selected_movie.get_tickets_purchased(), movie_choice),
+                (movie.get_tickets_purchased(), movie_id),
             )
             connection.commit()
             print("Purchase successful.")
@@ -194,28 +199,28 @@ while True:
 
     elif menu_choice == 4:
         list_sales(connection)
-        sale_choice = input_int("Sale ID to cancel: ")
+        sale_id = input_int("Sale ID to cancel: ")
         row = connection.execute(
-            "SELECT movie_id, qty FROM sale WHERE id = ?", (sale_choice,)
+            "SELECT movie_id, qty FROM sale WHERE id = ?", (sale_id,)
         ).fetchone()
         if not row:
             print("Sale not found.")
         else:
             movie_id, quantity = row
-            selected_movie = None
+            movie = None
             for theatre in theatres.values():
                 if theatre.has_movie(movie_id):
-                    selected_movie = theatre.get_movie(movie_id)
+                    movie = theatre.get_movie(movie_id)
                     break
-            if selected_movie is None:
+            if movie is None:
                 print("Movie not found.")
                 continue
             try:
-                selected_movie.cancel_tickets(quantity)
-                connection.execute("DELETE FROM sale WHERE id = ?", (sale_choice,))
+                movie.cancel_tickets(quantity)
+                connection.execute("DELETE FROM sale WHERE id = ?", (sale_id,))
                 connection.execute(
                     "UPDATE movie SET tickets_purchased = ? WHERE id = ?",
-                    (selected_movie.get_tickets_purchased(), movie_id),
+                    (movie.get_tickets_purchased(), movie_id),
                 )
                 connection.commit()
                 print("Cancellation successful.")
@@ -224,20 +229,20 @@ while True:
 
     elif menu_choice == 5:
         list_theatres(theatres)
-        theatre_choice = input_int("Theatre ID: ", list(theatres.keys()))
-        selected_theatre = theatres[theatre_choice]
-        list_movies(selected_theatre)
-        movie_choice = input_int("Movie ID: ", selected_theatre.get_movie_ids())
-        selected_movie = selected_theatre.get_movie(movie_choice)
+        theatre_id = input_int("Theatre ID: ", list(theatres.keys()))
+        theatre = theatres[theatre_id]
+        list_movies(theatre)
+        movie_id = input_int("Movie ID: ", theatre.get_movie_ids())
+        movie = theatre.get_movie(movie_id)
         new_price = input("New price (blank to skip): ").strip()
         new_time = input("New show time HH:MM (blank to skip): ").strip()
         if new_price:
-            selected_movie.set_price(float(new_price))
+            movie.set_price(float(new_price))
         if new_time:
-            selected_movie.set_show_time(new_time)
+            movie.set_show_time(new_time)
         connection.execute(
             "UPDATE movie SET price = ?, show_time = ? WHERE id = ?",
-            (selected_movie.get_price(), selected_movie.get_show_time(), movie_choice),
+            (movie.get_price(), movie.get_show_time(), movie_id),
         )
         connection.commit()
         print("Movie updated.")
