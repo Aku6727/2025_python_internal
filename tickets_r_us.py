@@ -113,25 +113,31 @@ def load_data():
 
 def list_theatres(theatres):
     """Display all theatres and their capacity"""
-    for theatre in theatres.values():
+    print("="*50)
+    for theatre in theatres.values():    
         print(f"{theatre.get_id()}: {theatre.get_name()} (capacity {theatre.get_capacity()})")
+    print("="*50)
 
 
 def list_movies(theatre: Theatre):
     """Display all movies for a given theatre"""
+    print("="*50)
     theatre_capacity = theatre.get_capacity()
     for movie in theatre.iter_movies():
         available = movie.tickets_available(theatre_capacity)
         print(
             f"{movie.get_id()}: {movie.get_title()} @ {movie.get_show_time()} | ${movie.get_price():.2f} | available {available}"
         )
+    print("="*50)
 
 
 def list_sales(connection):
     """Display all sales made"""
+    print("="*50)
     cursor = connection.execute("SELECT id, movie_id, qty, sale_time, total_price FROM sale")
     for sale_id, movie_id, quantity, sale_time, total_price in cursor.fetchall():
         print(f"{sale_id}: movie {movie_id} qty {quantity} time {sale_time} total ${total_price:.2f}")
+    print("="*50)
 
 
 def input_int(prompt, valid=None):
@@ -223,10 +229,6 @@ while True:
             try:
                 movie.cancel_tickets(quantity)
                 connection.execute("DELETE FROM sale WHERE id = ?", (sale_id,))
-                connection.execute(
-                    "UPDATE movie SET tickets_purchased = ? WHERE id = ?",
-                    (movie.get_tickets_purchased(), movie_id),
-                )
                 connection.commit()
                 print("Cancellation successful.")
             except ValueError as e:
