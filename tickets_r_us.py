@@ -151,7 +151,7 @@ def input_int(prompt, valid=None):
             else:
                 valid_parameter = ""
                 for i in range (len(valid)):
-                    validi = str(valid[i]) + " "
+                    validi = str(valid[i]) + ", "
                     valid_parameter = valid_parameter + validi
                 if len(valid)>5:
                     print(f"Please enter one of: {valid[0]} - {valid[len(valid)-1]}")
@@ -208,11 +208,15 @@ while True:
             )
             connection.commit()
             print("Purchase successful.")
+            print("="*50)
         except ValueError as e:
             print(e)
 
     elif menu_choice == 4:
         list_sales(connection)
+        if len(connection.execute("SELECT id FROM sale").fetchall()) == 0:
+            print("No sales to cancel.")
+            continue
         sale_id = input_int("Sale ID to cancel: ")
         row = connection.execute(
             "SELECT movie_id, qty FROM sale WHERE id = ?", (sale_id,)
@@ -251,7 +255,7 @@ while True:
             movie.set_show_time(new_time)
         connection.execute(
             "UPDATE movie SET price = ?, show_time = ? WHERE id = ?",
-            (movie.get_price(), movie.get_show_time(), movie_id),
+            (Movie.get_price(), movie.get_show_time(), movie_id),
         )
         connection.commit()
         print("Movie updated.")
