@@ -145,7 +145,7 @@ def input_int(prompt, valid=None):
     """Ask for an integer input and keep retrying until valid"""
     while True:
         try:
-            value = int(input(prompt))
+            value = int(input(prompt).strip())
             if valid is None or value in valid:
                 return value
             else:
@@ -153,8 +153,10 @@ def input_int(prompt, valid=None):
                 for i in range (len(valid)):
                     validi = str(valid[i]) + " "
                     valid_parameter = valid_parameter + validi
-                print(f"Please enter one of: {valid_parameter}")
-                print(valid)
+                if len(valid)>5:
+                    print(f"Please enter one of: {valid[0]} - {valid[len(valid)-1]}")
+                else:
+                    print(f"Please enter one of: {valid_parameter}")
         except ValueError:
             print("Please enter a valid number.")
 
