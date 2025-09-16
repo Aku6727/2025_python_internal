@@ -142,7 +142,12 @@ def input_int(prompt, valid=None):
             if valid is None or value in valid:
                 return value
             else:
-                print(f"Please enter one of: {list(valid)}")
+                valid_parameter = ""
+                for i in range (len(valid)):
+                    validi = str(valid[i]) + " "
+                    valid_parameter = valid_parameter + validi
+                print(f"Please enter one of: {valid_parameter}")
+                print(valid)
         except ValueError:
             print("Please enter a valid number.")
 
@@ -233,7 +238,6 @@ while True:
         theatre = theatres[theatre_id]
         list_movies(theatre)
         movie_id = input_int("Movie ID: ", theatre.get_movie_ids())
-        movie = theatre.get_movie(movie_id)
         new_price = input("New price (blank to skip): ").strip()
         new_time = input("New show time HH:MM (blank to skip): ").strip()
         if new_price:
