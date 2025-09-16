@@ -1,7 +1,8 @@
 import sqlite3
 from datetime import datetime
 
-DATABASE = "tickets_r_us_final.db"
+DATABASE = r"C:\Github\2025_python_internal\tickets_r_us_final.db"
+
 
 
 class Theatre:
@@ -166,7 +167,7 @@ while True:
     print(
         "1) View theatres\n2) View movies by theatre \n3) Purchase tickets \n4) Cancel purchase \n5) Admin: update movie info \n6) Exit"
     )
-    menu_choice = input_int(" ")
+    menu_choice = input_int("")
 
     if menu_choice == 1:
         list_theatres(theatres)
@@ -252,8 +253,10 @@ while True:
         )
         connection.commit()
         print("Movie updated.")
-
-    else:
+    elif menu_choice == 6:
+        print("Exiting...")
         break
+    else:
+        pass
 
 connection.close()
