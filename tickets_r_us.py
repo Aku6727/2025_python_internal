@@ -15,28 +15,36 @@ class Theatre:
 
     # ---- getters ----
     def get_id(self):
+        """Get the id of the theatre"""
         return self._theatre_id
 
     def get_name(self):
+        """Get the name of the theatre"""
         return self._theatre_name
 
     def get_capacity(self):
+        """Get the capacity of the theatre"""
         return self._theatre_capacity
 
     # ---- movies management ----
     def add_movie(self, movie):
+        """Add a movie to the theatre"""
         self._movies[movie.get_id()] = movie
 
     def has_movie(self, movie_id):
+        """Check if the theatre has a movie by id"""
         return movie_id in self._movies
 
     def get_movie(self, movie_id):
+        """Get a movie by id"""
         return self._movies.get(movie_id)
 
     def iter_movies(self):
+        """Iterate over all movies in the theatre"""
         return self._movies.values()
 
     def get_movie_ids(self):
+        """Get a list of all movie ids in the theatre"""
         return list(self._movies.keys())
 
 
@@ -53,45 +61,57 @@ class Movie:
 
     # ---- getters/setters ----
     def get_id(self):
+        """Get the id of the movie"""
         return self._movie_id
 
     def get_theatre_id(self):
+        """Get the id of the theatre the movie is assigned to"""
         return self._theatre_id
 
     def get_title(self):
+        """Get the title of the movie"""
         return self._movie_title
 
     def get_price(self):
+        """Get the price of the movie ticket"""
         return self._ticket_price
 
     def set_price(self, new_price: float):
+        """Set a new price for the movie ticket"""
         self._ticket_price = float(new_price)
 
     def get_show_time(self):
+        """Get the show time of the movie"""
         return self._show_time
 
     def set_show_time(self, new_time: str):
+        """Set a new show time for the movie"""
         self._show_time = new_time
 
     def get_tickets_purchased(self):
+        """Get the number of tickets purchased for the movie"""
         return self._tickets_purchased
 
     # ---- business logic ----
     def tickets_available(self, theatre_capacity):
+        """Get the number of tickets available for the movie based on the theatre capacity"""
         return theatre_capacity - self._tickets_purchased
 
     def purchase_tickets(self, quantity, theatre_capacity):
+        """Purchase a number of tickets for the movie if available"""
         if quantity < 1 or quantity > self.tickets_available(theatre_capacity):
             raise ValueError("Invalid ticket quantity")
         self._tickets_purchased += quantity
 
     def cancel_tickets(self, quantity):
+        """Cancel a number of tickets for the movie if previously purchased"""
         if quantity < 1 or quantity > self._tickets_purchased:
             raise ValueError("Invalid ticket quantity")
         self._tickets_purchased -= quantity
 
 
 def load_data():
+    """Load data from the database and return a connection and a dictionary of theatres"""
     connection = sqlite3.connect(DATABASE)
     connection.execute("PRAGMA foreign_keys = ON")
     cursor = connection.cursor()
@@ -160,6 +180,13 @@ def input_int(prompt, valid=None):
         except ValueError:
             print("Please enter a valid number.")
 
+def is_valid_time(time_str: str):
+    """Check if string is a valid 24h time in HH:MM format."""
+    try:
+        datetime.strptime(time_str, "%H:%M")
+        return True
+    except ValueError:
+        return False
 
 # load database and objects
 connection, theatres = load_data()
@@ -247,18 +274,41 @@ while True:
         theatre = theatres[theatre_id]
         list_movies(theatre)
         movie_id = input_int("Movie ID: ", theatre.get_movie_ids())
-        new_price = input("New price (blank to skip): ").strip()
-        new_time = input("New show time HH:MM (blank to skip): ").strip()
-        if new_price:
-            movie.set_price(float(new_price))
-        if new_time:
-            movie.set_show_time(new_time)
+        movie = theatre.get_movie(movie_id)  
+
+        new_values_ask = True
+        while new_values_ask == True:
+            new_price = input("New price (blank to skip): ").strip()
+            new_time = input("New show time HH:MM (blank to skip): ").strip()
+            if new_price == "" and new_time == "":
+                print("No changes made.")
+                new_values_ask = False
+            else:
+                if new_price != "":
+                    try:
+                        new_price_float = float(new_price)
+                        if new_price_float < 0:
+                            print("Price must be non-negative.")
+                            continue
+                        movie.set_price(new_price_float)
+                    except ValueError:
+                        print("Invalid price format.")
+                        continue
+                if new_time != "":
+                    if not is_valid_time(new_time):
+                        print("Invalid time format. Please use HH:MM in 24-hour format.")
+                        continue
+                    movie.set_show_time(new_time)
+                new_values_ask = False 
+    
+
         connection.execute(
             "UPDATE movie SET price = ?, show_time = ? WHERE id = ?",
-            (Movie.get_price(), movie.get_show_time(), movie_id),
+            (movie.get_price(), movie.get_show_time(), movie_id),
         )
         connection.commit()
         print("Movie updated.")
+
     elif menu_choice == 6:
         print("Exiting...")
         break
